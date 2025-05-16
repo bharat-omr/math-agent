@@ -25,3 +25,11 @@ A Streamlit-based AI assistant that allows users to chat with uploaded PDFs and 
    ```bash
    git clone https://github.com/bharat-omr/ai-pdf-web-chat.git
    
+## Create a .env file:
+
+GOOGLE_API_KEY=your_google_api_key
+SERPAPI_API_KEY=your_serpapi_key
+
+## Run the app:
+
+streamlit run main.py
