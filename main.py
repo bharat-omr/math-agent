@@ -99,7 +99,7 @@ def main():
         st.subheader("💬 Chat with Your PDFs")
 
         if "conversation" not in st.session_state:
-            st.warning("Please upload and process PDFs first.")
+            st.warning("📁 Please upload and process PDFs first.")
         else:
             for msg in st.session_state.chat_history_doc:
                 with st.chat_message("user"):
@@ -109,40 +109,77 @@ def main():
 
             user_input = st.chat_input("Ask something about your PDFs...")
             if user_input:
-                with st.chat_message("user"):
-                    st.markdown(user_input)
+                st.chat_message("user").markdown(user_input)
 
                 with st.chat_message("assistant"):
-                    with st.spinner("🤖 Thinking..."):
+                    with st.spinner("✍️ AI is thinking..."):
                         try:
-                            full_prompt = f"Answer step-by-step: {user_input}"
-                            response = st.session_state.conversation({"question": full_prompt})
+                            prompt = f"Answer step-by-step: {user_input}"
+                            response = st.session_state.conversation({"question": prompt})
                             answer = response['answer'].strip()
 
-                            # Fallback if needed
+                            is_fallback = False
                             if not answer or "I'm sorry" in answer or "does not contain" in answer:
+                                is_fallback = True
                                 serp_result = search.run(user_input)
                                 web_prompt = f"""You are a helpful AI tutor. Based on the real-time web result and your own knowledge, answer the following question step-by-step.
 
-Question: {user_input}
-Web Search Result: {serp_result}
+    Question: {user_input}
+    Web Search Result: {serp_result}
 
-Answer:"""
+    Answer:"""
                                 gemini_response = gemini_model.generate_content(web_prompt)
-                                answer = f"📡 *Web Fallback*:\n\n{gemini_response.text.strip()}"
+                                answer = f"📡 *Web Fallback Used*\n\n{gemini_response.text.strip()}"
 
                             st.markdown(answer)
                             st.session_state.chat_history_doc.append({"user": user_input, "bot": answer})
 
-                            # DSPy Feedback Evaluation
+                            # DSPy Feedback
                             feedback = st.session_state.feedback_model(question=user_input, answer=answer)
-                            st.markdown(f"🔎 *Feedback Analysis:* `{feedback.feedback}`")
+                            st.markdown(f"<div style='color:gray; font-size: 0.85em;'>🔎 Feedback: `{feedback.feedback}`</div>", unsafe_allow_html=True)
 
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
 
-            if st.button("🗑️ Clear Chat History"):
+            st.divider()
+            if st.button("🗑️ Clear Chat History", use_container_width=True):
                 st.session_state.chat_history_doc = []
+
+    elif choice == "🌐 Ask AI with Web":
+        st.subheader("🌐 Ask Anything (with Web Support)")
+
+        for msg in st.session_state.chat_history_web:
+            with st.chat_message("user"):
+                st.markdown(msg["user"])
+            with st.chat_message("assistant"):
+                st.markdown(msg["bot"])
+
+        user_question = st.chat_input("Type your question...")
+        if user_question:
+            st.chat_message("user").markdown(user_question)
+
+            with st.chat_message("assistant"):
+                with st.spinner("🌍 Searching the web and generating answer..."):
+                    try:
+                        serp_result = search.run(user_question)
+                        prompt = f"""You are a helpful AI tutor. Based on the real-time web result and your own knowledge, answer the following question step-by-step.
+
+    Question: {user_question}
+    Web Search Result: {serp_result}
+
+    Answer:"""
+                        response = gemini_model.generate_content(prompt)
+                        answer = f"📡 *Web Sourced Response*\n\n{response.text.strip()}"
+
+                        st.markdown(answer)
+                        st.session_state.chat_history_web.append({"user": user_question, "bot": answer})
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
+
+        st.divider()
+        if st.button("🗑️ Clear Web Chat History", use_container_width=True):
+            st.session_state.chat_history_web = []
+
 
     elif choice == "🌐 Ask AI with Web":
         st.subheader("🌐 Ask Anything (with Web Support) 🔍")
